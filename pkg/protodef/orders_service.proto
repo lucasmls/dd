@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package dd;
+
+option go_package = "github.com/lucasmls/dd/pkg/protog";
+
+message SendOrderRequest {
+  float amount = 1;
+  float quote = 2;
+}
+
+message SendOrderResponse {
+  string id = 1;
+}
+
+service OrdersService {
+  rpc Send(SendOrderRequest) returns (SendOrderResponse);
+}
+
