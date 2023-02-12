@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package dd;
+
+option go_package = "github.com/lucasmls/dd/pkg/protog";
+
+message Order {
+  string id = 1;
+  float amount = 2;
+  float quote = 3;
+}
