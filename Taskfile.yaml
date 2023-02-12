@@ -1,0 +1,29 @@
+# https://taskfile.dev
+
+version: '3'
+
+tasks:
+  run:
+    - go run ./cmd/grpc/main.go
+
+  proto:
+    cmds:
+      - mkdir -p pkg/protog
+      - |
+        protoc \
+          --go_out=./pkg/protog \
+          --go_opt=paths=source_relative \
+          --go-grpc_out=./pkg/protog \
+          --go-grpc_opt=paths=source_relative \
+          -I=./pkg/protodef/ \
+          ./pkg/protodef/*.proto
+
+      - mkdir -p internal/pkg/protog
+      - |
+        protoc \
+          --go_out=./internal/pkg/protog \
+          --go_opt=paths=source_relative \
+          --go-grpc_out=./internal/pkg/protog \
+          --go-grpc_opt=paths=source_relative \
+          -I=./internal/pkg/protodef/ \
+          ./internal/pkg/protodef/*.proto
