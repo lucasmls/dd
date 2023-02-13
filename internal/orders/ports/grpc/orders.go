@@ -2,8 +2,10 @@ package grpc_port
 
 import (
 	"context"
+	"errors"
 
 	"github.com/lucasmls/dd/internal/orders"
+	"github.com/lucasmls/dd/internal/orders/adapters/repositories"
 	iProtog "github.com/lucasmls/dd/internal/pkg/protog"
 	"github.com/lucasmls/dd/pkg/protog"
 	"go.uber.org/zap"
@@ -13,7 +15,7 @@ import (
 
 // OrdersResolver ...
 type OrdersResolver struct {
-	logger           *zap.Logger
+	logger           *zap.SugaredLogger
 	ordersRepository orders.Repository
 
 	protog.UnimplementedOrdersServiceServer
@@ -21,7 +23,7 @@ type OrdersResolver struct {
 
 // NewOrdersResolver ...
 func NewOrdersResolver(
-	logger *zap.Logger,
+	logger *zap.SugaredLogger,
 	ordersRepository orders.Repository,
 ) (OrdersResolver, error) {
 
@@ -33,7 +35,7 @@ func NewOrdersResolver(
 
 // MustNewOrdersResolver ...
 func MustNewOrdersResolver(
-	logger *zap.Logger,
+	logger *zap.SugaredLogger,
 	ordersRepository orders.Repository,
 ) OrdersResolver {
 
@@ -63,6 +65,17 @@ func (r OrdersResolver) Send(
 
 	order, err := r.ordersRepository.Create(ctx, order)
 	if err != nil {
+		if errors.Is(err, repositories.ErrStorageLimitReached) {
+			r.logger.Warnw(
+				"orders storage limit reached",
+				zap.Error(err),
+			)
+
+			return nil, status.Error(codes.ResourceExhausted, err.Error())
+		}
+
+		r.logger.Error("failed to store sent order", zap.Error(err))
+
 		return nil, InternalServerError
 	}
 

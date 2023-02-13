@@ -18,13 +18,15 @@ func main() {
 	logger, _ := zap.NewProduction()
 	defer logger.Sync()
 
+	sLogger := logger.Sugar()
+
 	orderRepository := repositories.MustNewInMemoryOrdersRepository(
 		logger,
 		10,
 	)
 
 	ordersResolver := resolvers.MustNewOrdersResolver(
-		logger,
+		sLogger,
 		orderRepository,
 	)
 
