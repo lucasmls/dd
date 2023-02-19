@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/lucasmls/dd/internal/pkg/protog"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
@@ -15,14 +16,16 @@ var (
 )
 
 type InMemoryOrdersRepository struct {
-	logger      *zap.Logger
+	logger      *zap.SugaredLogger
+	tracer      trace.Tracer
 	storageSize int
 	storage     map[string]*protog.Order
 }
 
 // NewInMemoryOrdersRepository creates a new InMemoryOrdersRepository.
 func NewInMemoryOrdersRepository(
-	logger *zap.Logger,
+	logger *zap.SugaredLogger,
+	tracer trace.Tracer,
 	storageSize int,
 ) (InMemoryOrdersRepository, error) {
 	if storageSize == 0 {
@@ -31,6 +34,7 @@ func NewInMemoryOrdersRepository(
 
 	return InMemoryOrdersRepository{
 		logger:      logger,
+		tracer:      tracer,
 		storageSize: storageSize,
 		storage:     make(map[string]*protog.Order, storageSize),
 	}, nil
@@ -39,10 +43,11 @@ func NewInMemoryOrdersRepository(
 // MustNewInMemoryOrdersRepository creates a new InMemoryOrdersRepository.
 // It panics if any error is found.
 func MustNewInMemoryOrdersRepository(
-	logger *zap.Logger,
+	logger *zap.SugaredLogger,
+	tracer trace.Tracer,
 	storageSize int,
 ) InMemoryOrdersRepository {
-	repo, err := NewInMemoryOrdersRepository(logger, storageSize)
+	repo, err := NewInMemoryOrdersRepository(logger, tracer, storageSize)
 	if err != nil {
 		panic(err)
 	}
@@ -54,6 +59,9 @@ func (r InMemoryOrdersRepository) Create(
 	ctx context.Context,
 	order *protog.Order,
 ) (*protog.Order, error) {
+	ctx, span := r.tracer.Start(ctx, "InMemoryOrdersRepository.Create")
+	defer span.End()
+
 	if len(r.storage) == r.storageSize {
 		return nil, ErrStorageLimitReached
 	}

@@ -8,6 +8,7 @@ import (
 	"github.com/lucasmls/dd/internal/orders/adapters/repositories"
 	iProtog "github.com/lucasmls/dd/internal/pkg/protog"
 	"github.com/lucasmls/dd/pkg/protog"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -16,6 +17,7 @@ import (
 // OrdersResolver ...
 type OrdersResolver struct {
 	logger           *zap.SugaredLogger
+	tracer           trace.Tracer
 	ordersRepository orders.Repository
 
 	protog.UnimplementedOrdersServiceServer
@@ -24,11 +26,13 @@ type OrdersResolver struct {
 // NewOrdersResolver ...
 func NewOrdersResolver(
 	logger *zap.SugaredLogger,
+	tracer trace.Tracer,
 	ordersRepository orders.Repository,
 ) (OrdersResolver, error) {
 
 	return OrdersResolver{
 		logger:           logger,
+		tracer:           tracer,
 		ordersRepository: ordersRepository,
 	}, nil
 }
@@ -36,11 +40,13 @@ func NewOrdersResolver(
 // MustNewOrdersResolver ...
 func MustNewOrdersResolver(
 	logger *zap.SugaredLogger,
+	tracer trace.Tracer,
 	ordersRepository orders.Repository,
 ) OrdersResolver {
 
 	ordersResolver, err := NewOrdersResolver(
 		logger,
+		tracer,
 		ordersRepository,
 	)
 	if err != nil {
@@ -58,6 +64,9 @@ func (r OrdersResolver) Send(
 	ctx context.Context,
 	req *protog.SendOrderRequest,
 ) (*protog.SendOrderResponse, error) {
+	ctx, span := r.tracer.Start(ctx, "OrdersResolver.Send")
+	defer span.End()
+
 	order := &iProtog.Order{
 		Amount: req.Amount,
 		Quote:  req.Quote,
