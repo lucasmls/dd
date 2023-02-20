@@ -3,6 +3,14 @@
 version: '3'
 
 tasks:
+  infra/run:
+    cmds:
+      - docker compose up -d
+
+  infra/down:
+    cmds:
+      - docker compose down
+
   run:
     - go run ./cmd/grpc/main.go
 
