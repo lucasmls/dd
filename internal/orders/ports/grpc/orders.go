@@ -8,6 +8,7 @@ import (
 	"github.com/lucasmls/dd/internal/orders/adapters/repositories"
 	iProtog "github.com/lucasmls/dd/internal/pkg/protog"
 	"github.com/lucasmls/dd/pkg/protog"
+	otelCodes "go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
@@ -79,6 +80,8 @@ func (r OrdersResolver) Send(
 				"orders storage limit reached",
 				zap.Error(err),
 			)
+
+			span.SetStatus(otelCodes.Error, err.Error())
 
 			return nil, status.Error(codes.ResourceExhausted, err.Error())
 		}

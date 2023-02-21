@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/lucasmls/dd/internal/pkg/protog"
+	otelCodes "go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
@@ -63,6 +64,7 @@ func (r InMemoryOrdersRepository) Create(
 	defer span.End()
 
 	if len(r.storage) == r.storageSize {
+		span.SetStatus(otelCodes.Error, ErrStorageLimitReached.Error())
 		return nil, ErrStorageLimitReached
 	}
 
