@@ -65,7 +65,11 @@ func (r OrdersResolver) Send(
 	ctx context.Context,
 	req *protog.SendOrderRequest,
 ) (*protog.SendOrderResponse, error) {
-	ctx, span := r.tracer.Start(ctx, "OrdersResolver.Send")
+	ctx, span := r.tracer.Start(
+		ctx,
+		"OrdersResolver.Send",
+		trace.WithSpanKind(trace.SpanKindServer),
+	)
 	defer span.End()
 
 	order := &iProtog.Order{
