@@ -14,6 +14,7 @@ import (
 var (
 	ErrInvalidStorageSize  = errors.New("invalid-storage-size")
 	ErrStorageLimitReached = errors.New("storage-limit-reached")
+	ErrOrderNotFound       = errors.New("order-not-found")
 )
 
 type InMemoryOrdersRepository struct {
@@ -73,5 +74,20 @@ func (r InMemoryOrdersRepository) Create(
 	}
 
 	r.storage[order.Id] = order
+	return order, nil
+}
+
+func (r InMemoryOrdersRepository) Find(
+	ctx context.Context,
+	id string,
+) (*protog.Order, error) {
+	ctx, span := r.tracer.Start(ctx, "InMemoryOrdersRepository.Find")
+	defer span.End()
+
+	order, ok := r.storage[id]
+	if !ok {
+		return nil, ErrOrderNotFound
+	}
+
 	return order, nil
 }
