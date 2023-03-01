@@ -79,13 +79,13 @@ func (r OrdersResolver) Send(
 
 	order, err := r.ordersRepository.Create(ctx, order)
 	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
+
 		if errors.Is(err, repositories.ErrStorageLimitReached) {
 			r.logger.Warnw(
 				"orders storage limit reached",
 				zap.Error(err),
 			)
-
-			span.SetStatus(otelCodes.Error, err.Error())
 
 			return nil, status.Error(codes.ResourceExhausted, err.Error())
 		}
@@ -97,5 +97,46 @@ func (r OrdersResolver) Send(
 
 	return &protog.SendOrderResponse{
 		Id: order.Id,
+	}, nil
+}
+
+func (r OrdersResolver) Find(
+	ctx context.Context,
+	req *protog.FindOrderRequest,
+) (*protog.FindOrderResponse, error) {
+	ctx, span := r.tracer.Start(
+		ctx,
+		"OrdersResolver.Find",
+		trace.WithSpanKind(trace.SpanKindServer),
+	)
+	defer span.End()
+
+	order, err := r.ordersRepository.Find(ctx, req.Id)
+	if err != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
+
+		if errors.Is(err, repositories.ErrOrderNotFound) {
+			r.logger.Error(
+				"order not found",
+				zap.Error(err),
+				zap.String("id", req.Id),
+			)
+
+			return nil, status.Error(codes.NotFound, err.Error())
+		}
+
+		r.logger.Error(
+			"failed to find order",
+			zap.Error(err),
+			zap.String("id", req.Id),
+		)
+
+		return nil, InternalServerError
+	}
+
+	return &protog.FindOrderResponse{
+		Id:     order.Id,
+		Amount: order.Amount,
+		Quote:  order.Quote,
 	}, nil
 }

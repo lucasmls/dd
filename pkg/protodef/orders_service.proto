@@ -4,6 +4,16 @@ package dd;
 
 option go_package = "github.com/lucasmls/dd/pkg/protog";
 
+message FindOrderRequest {
+  string id = 1;
+}
+
+message FindOrderResponse {
+  string id = 1;
+  float amount = 2;
+  float quote = 3;
+}
+
 message SendOrderRequest {
   float amount = 1;
   float quote = 2;
@@ -14,6 +24,7 @@ message SendOrderResponse {
 }
 
 service OrdersService {
+  rpc Find(FindOrderRequest) returns (FindOrderResponse);
   rpc Send(SendOrderRequest) returns (SendOrderResponse);
 }
 
