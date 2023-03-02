@@ -23,6 +23,11 @@ exporters:
 
 service:
   pipelines:
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [datadog]
+
     traces:
       receivers: [otlp]
       processors: [batch]
