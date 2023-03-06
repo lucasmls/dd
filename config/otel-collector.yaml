@@ -11,6 +11,9 @@ processors:
     timeout: 10s
 
 exporters:
+  prometheus:
+    endpoint: "0.0.0.0:1234"
+
   jaeger:
     endpoint: jaeger-all-in-one:14250
     tls:
@@ -26,7 +29,7 @@ service:
     metrics:
       receivers: [otlp]
       processors: [batch]
-      exporters: [datadog]
+      exporters: [datadog, prometheus]
 
     traces:
       receivers: [otlp]
