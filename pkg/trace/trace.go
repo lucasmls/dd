@@ -7,19 +7,19 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
-	sdkTrace "go.opentelemetry.io/otel/sdk/trace"
+	traceSdk "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 	"go.opentelemetry.io/otel/trace"
 )
 
 var (
-	MissingApplicationNameErr = errors.New("trace: misssing application name")
+	ErrMissingApplicationName = errors.New("trace: misssing application name")
 )
 
 type TraceClient struct {
 	applicationName    string
 	applicationVersion string
-	exporter           sdkTrace.SpanExporter
+	exporter           traceSdk.SpanExporter
 
 	// TraceRatio indicates how often the system should collect traces.
 	// Use it with caution: It may overload the system and also be too expensive to mantain its value too high in a high throughput system
@@ -31,11 +31,11 @@ type TraceClient struct {
 func NewTraceClient(
 	applicationName string,
 	applicationVersion string,
-	exporter sdkTrace.SpanExporter,
+	exporter traceSdk.SpanExporter,
 	traceRatio float64,
 ) (*TraceClient, error) {
 	if applicationName == "" {
-		return nil, MissingApplicationNameErr
+		return nil, ErrMissingApplicationName
 	}
 
 	if applicationVersion == "" {
@@ -53,10 +53,15 @@ func NewTraceClient(
 func MustNewTraceClient(
 	applicationName string,
 	applicationVersion string,
-	exporter sdkTrace.SpanExporter,
+	exporter traceSdk.SpanExporter,
 	traceRatio float64,
 ) *TraceClient {
-	client, err := NewTraceClient(applicationName, applicationVersion, exporter, traceRatio)
+	client, err := NewTraceClient(
+		applicationName,
+		applicationVersion,
+		exporter,
+		traceRatio,
+	)
 	if err != nil {
 		panic(err)
 	}
@@ -65,10 +70,10 @@ func MustNewTraceClient(
 }
 
 func (c TraceClient) Tracer(ctx context.Context) (trace.Tracer, func(context.Context) error) {
-	tOpts := []sdkTrace.TracerProviderOption{
-		sdkTrace.WithSampler(sdkTrace.TraceIDRatioBased(c.traceRatio)),
-		sdkTrace.WithBatcher(c.exporter),
-		sdkTrace.WithResource(
+	tOpts := []traceSdk.TracerProviderOption{
+		traceSdk.WithSampler(traceSdk.TraceIDRatioBased(c.traceRatio)),
+		traceSdk.WithBatcher(c.exporter),
+		traceSdk.WithResource(
 			resource.NewWithAttributes(
 				semconv.SchemaURL,
 				semconv.ServiceNameKey.String(c.applicationName),
@@ -77,13 +82,13 @@ func (c TraceClient) Tracer(ctx context.Context) (trace.Tracer, func(context.Con
 		),
 	}
 
-	tProvider := sdkTrace.NewTracerProvider(tOpts...)
+	traceProvider := traceSdk.NewTracerProvider(tOpts...)
 
-	otel.SetTracerProvider(tProvider)
+	otel.SetTracerProvider(traceProvider)
 	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(
 		propagation.TraceContext{},
 		propagation.Baggage{},
 	))
 
-	return tProvider.Tracer(c.applicationName), tProvider.ForceFlush
+	return traceProvider.Tracer(c.applicationName), traceProvider.ForceFlush
 }

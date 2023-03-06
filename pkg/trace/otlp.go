@@ -3,7 +3,7 @@ package trace
 import (
 	"context"
 
-	otelOtlpGrpcExporter "go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+	otlpGrpcTraceExporter "go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/trace"
 	gGRPC "google.golang.org/grpc"
 )
@@ -22,7 +22,7 @@ func NewOtlpTracerProvider(
 	otelCollectorGprcConnection *gGRPC.ClientConn,
 ) (*OtlpTracerProvider, error) {
 	if applicationName == "" {
-		return nil, MissingApplicationNameErr
+		return nil, ErrMissingApplicationName
 	}
 
 	if applicationVersion == "" {
@@ -52,9 +52,9 @@ func MustNewOtlpProvider(
 }
 
 func (c OtlpTracerProvider) Tracer(ctx context.Context) (trace.Tracer, func(context.Context) error, error) {
-	otlpTraceExporter, err := otelOtlpGrpcExporter.New(
+	otlpTraceExporter, err := otlpGrpcTraceExporter.New(
 		ctx,
-		otelOtlpGrpcExporter.WithGRPCConn(c.otelCollectorGprcConnection),
+		otlpGrpcTraceExporter.WithGRPCConn(c.otelCollectorGprcConnection),
 	)
 	if err != nil {
 		return nil, nil, err
