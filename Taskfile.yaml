@@ -3,7 +3,7 @@
 version: '3'
 
 tasks:
-  infra/run:
+  infra/up:
     cmds:
       - docker compose up -d
 
